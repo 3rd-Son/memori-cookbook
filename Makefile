@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format clean setup-hooks run-example
+.PHONY: help install dev lint format clean setup-hooks pre-commit
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -29,13 +29,6 @@ clean: ## Clean up Python cache files
 	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
-
-run-example: ## Run an example (usage: make run-example FILE=examples/basic/main.py)
-	@echo "Running example: $(FILE)"
-	uv run python $(FILE)
-
-test: ## Run tests
-	uv run pytest
 
 pre-commit: ## Run pre-commit on all files
 	uv run pre-commit run --all-files
