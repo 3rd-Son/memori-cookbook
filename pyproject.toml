@@ -34,6 +34,7 @@ dev = [
 # Dependencies for examples
 examples = [
     "fastapi>=0.115.0",
+    "streamlit>=1.36.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.11.0",
     "python-dotenv>=1.0.1",
@@ -45,6 +46,7 @@ examples = [
     "psycopg>=3.2.10",
     "httpx>=0.27.2",
     "validators>=0.35.0",
+    "firecrawl-py>=0.1.0",
 ]
 
 [project.urls]
