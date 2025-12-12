@@ -1,0 +1,56 @@
+## Customer Support Voice Agent
+
+Customer-support assistant powered by **OpenAI GPT‑4o**, **OpenAI TTS**, **Memori v3**, and **Firecrawl**.
+Paste your docs/FAQ URLs, ingest them into Memori, and chat with a voice-enabled support agent on top of that knowledge.
+
+### Features
+
+- **Company‑agnostic**: Works for any product/company docs you point it at.
+- **Memori v3 knowledge base**: Docs are crawled with Firecrawl and stored in a Memori‑backed SQLite DB.
+- **Chat + Voice UI**: Streamlit chat interface with optional audio playback.
+- **Persistent memory**: Conversations and ingested docs are stored for future questions.
+
+### Setup
+
+Install dependencies (use any Python 3.11+ environment you like).
+You can use either `pip` or `uv` (recommended for projects in this repo).
+
+**Option 1 – Using uv (from `pyproject.toml`):**
+
+```bash
+cd memori-cookbook/customer_support_voice_agent
+
+# Install dependencies defined in pyproject.toml
+uv sync
+```
+
+**Option 2 – Using pip + requirements.txt:**
+
+```bash
+cd memori-cookbook/customer_support_voice_agent
+python -m pip install -r requirements.txt
+```
+
+Create a `.env` file (copy from `.env.example`) and set:
+
+- `OPENAI_API_KEY` – required (chat + TTS).
+- `FIRECRAWL_API_KEY` – required to ingest docs via Firecrawl.
+- `MEMORI_API_KEY` – optional, for Memori Advanced Augmentation / higher quotas.
+- `SQLITE_DB_PATH` – optional, defaults to `./memori.sqlite`.
+
+### Run
+
+```bash
+# If you used uv, run Streamlit via uv:
+cd memori-cookbook/customer_support_voice_agent
+uv run streamlit run app.py
+
+# Or, if you installed with pip and have streamlit on your PATH:
+streamlit run app.py
+```
+
+In the **sidebar**:
+
+1. Enter your **Firecrawl**, **Memori** (optional), and **OpenAI** API keys.
+2. (Optionally) set a **Company Name**.
+3. Paste one or more documentation URLs (one per line) under **“Ingest Docs into Memori”** and click **“Extract & store to Memori”**.
