@@ -51,6 +51,8 @@ examples = [
     "exa_py",
     "agno",
     "tavily-python>=0.3.0",
+    "pymongo",
+    "langgraph>=0.2.60",
 ]
 
 [project.urls]
