@@ -3,7 +3,8 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from core import (
     CandidateProfile,
@@ -190,12 +191,11 @@ def _get_memori_manager(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Technical Interview Prep API")
-
 
 # Initialize database tables on startup
-@app.on_event("startup")
-def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     logger.info("Starting up - initializing database...")
     try:
         init_database()
@@ -203,10 +203,15 @@ def startup_event():
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
+    yield
+    # Shutdown (if needed)
+    logger.info("Shutting down...")
 
+
+app = FastAPI(title="Technical Interview Prep API", lifespan=lifespan)
 
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[arg-type]
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
@@ -354,7 +359,7 @@ def evaluate_solution_endpoint(req: EvaluateRequest) -> dict:
             time_complexity=time_complexity,
             space_complexity=space_complexity,
             evaluation_markdown=evaluation_md,
-            next_review_at=datetime.utcnow(),
+            next_review_at=datetime.now(timezone.utc),
         )
         db.add(attempt)
         db.commit()
@@ -410,7 +415,9 @@ def save_attempt(req: SaveAttemptRequest) -> dict:
             evaluation_markdown=req.evaluationMarkdown,
             company_style=req.companyStyle,
             mock_session_id=req.mockSessionId,
-            next_review_at=datetime.utcnow(),  # Due immediately for first review
+            next_review_at=datetime.now(
+                timezone.utc
+            ),  # Due immediately for first review
         )
         db.add(attempt)
         db.commit()
@@ -701,7 +708,7 @@ def complete_mock_session(session_id: str) -> dict:
         if problems:
             total_score = total_score / len(problems)
 
-        session.completed_at = datetime.utcnow()
+        session.completed_at = datetime.now(timezone.utc)
         session.problems_completed = len(problems)
         session.total_score = total_score
         db.commit()
@@ -940,7 +947,7 @@ def export_markdown(user_id: str) -> str:
         # Build markdown
         md = "# Interview Practice History\n\n"
         md += f"**User:** {user_id}\n"
-        md += f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+        md += f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n"
 
         # Summary
         md += "## Summary\n\n"

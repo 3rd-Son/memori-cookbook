@@ -5,7 +5,7 @@ Stores problem attempts, bookmarks, study plans, and analytics data.
 
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import (
     Column,
@@ -29,7 +29,9 @@ class ProblemAttempt(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), index=True
+    )
 
     # Problem metadata
     title = Column(String(500), nullable=False)
@@ -66,7 +68,7 @@ class ProblemAttempt(Base):
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "title": self.title,
             "difficulty": self.difficulty,
-            "patterns": json.loads(self.patterns) if self.patterns else [],
+            "patterns": json.loads(self.patterns) if self.patterns else [],  # type: ignore[arg-type]
             "statement": self.statement,
             "language": self.language,
             "code": self.code,
@@ -93,7 +95,7 @@ class Bookmark(Base):
     user_id = Column(String(255), nullable=False, index=True)
     attempt_id = Column(Integer, ForeignKey("problem_attempts.id"), nullable=False)
     collection_name = Column(String(255), default="Saved")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     notes = Column(Text, nullable=True)
 
     def to_dict(self) -> dict:
@@ -114,7 +116,7 @@ class MockInterviewSession(Base):
 
     id = Column(String(100), primary_key=True)
     user_id = Column(String(255), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
 
     # Session config
@@ -136,7 +138,7 @@ class MockInterviewSession(Base):
             "sessionType": self.session_type,
             "timeLimitMinutes": self.time_limit_minutes,
             "numProblems": self.num_problems,
-            "difficulties": json.loads(self.difficulties) if self.difficulties else [],
+            "difficulties": json.loads(self.difficulties) if self.difficulties else [],  # type: ignore[arg-type]
             "problemsCompleted": self.problems_completed,
             "totalScore": self.total_score,
         }
@@ -149,7 +151,7 @@ class StudyPlan(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Plan content
     week_number = Column(Integer, default=1)
@@ -164,7 +166,7 @@ class StudyPlan(Base):
             "userId": self.user_id,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "weekNumber": self.week_number,
-            "focusPatterns": json.loads(self.focus_patterns)
+            "focusPatterns": json.loads(self.focus_patterns)  # type: ignore[arg-type]
             if self.focus_patterns
             else [],
             "dailyGoal": self.daily_goal,
@@ -207,7 +209,7 @@ def calculate_next_review(attempt: ProblemAttempt, was_correct: bool) -> datetim
     Calculate next review date using SM-2 algorithm variant.
     """
     if was_correct:
-        new_interval = int(attempt.review_interval_days * attempt.ease_factor)
+        new_interval = int(attempt.review_interval_days * attempt.ease_factor)  # type: ignore[arg-type]
         new_ease = min(2.5, attempt.ease_factor + 0.1)
     else:
         new_interval = 1  # Reset to 1 day
@@ -215,7 +217,7 @@ def calculate_next_review(attempt: ProblemAttempt, was_correct: bool) -> datetim
 
     attempt.review_interval_days = new_interval
     attempt.ease_factor = new_ease
-    attempt.next_review_at = datetime.utcnow() + timedelta(days=new_interval)
+    attempt.next_review_at = datetime.now(timezone.utc) + timedelta(days=new_interval)
 
     return attempt.next_review_at
 
@@ -224,7 +226,7 @@ def get_due_problems(
     db: Session, user_id: str, limit: int = 10
 ) -> list[ProblemAttempt]:
     """Get problems due for review (spaced repetition)."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return (
         db.query(ProblemAttempt)
         .filter(
@@ -245,7 +247,7 @@ def get_pattern_stats(db: Session, user_id: str) -> dict[str, dict]:
     pattern_stats: dict[str, dict] = {}
 
     for attempt in attempts:
-        patterns = json.loads(attempt.patterns) if attempt.patterns else []
+        patterns = json.loads(attempt.patterns) if attempt.patterns else []  # type: ignore[arg-type]
         for pattern in patterns:
             if pattern not in pattern_stats:
                 pattern_stats[pattern] = {
@@ -287,7 +289,7 @@ def get_difficulty_stats(db: Session, user_id: str) -> dict[str, dict]:
 
 def get_weekly_activity(db: Session, user_id: str, weeks: int = 12) -> list[dict]:
     """Get weekly problem count for the last N weeks."""
-    end_date = datetime.utcnow()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(weeks=weeks)
 
     attempts = (
